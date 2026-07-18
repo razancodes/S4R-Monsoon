@@ -62,7 +62,7 @@ tests/…                            — mirrors src layout
 **Interfaces:**
 - Produces: importable package `s4r`; `uv run pytest` works.
 
-- [ ] **Step 1: Scaffold**
+- [x] **Step 1: Scaffold**
 
 `pyproject.toml`:
 ```toml
@@ -110,8 +110,8 @@ def test_import():
     import s4r  # noqa: F401
 ```
 
-- [ ] **Step 2: `uv sync && uv run pytest -q`** → 1 passed
-- [ ] **Step 3: Commit** `chore: scaffold s4r uv project`
+- [x] **Step 2: `uv sync && uv run pytest -q`** → 1 passed
+- [x] **Step 3: Commit** `chore: scaffold s4r uv project`
 
 ### Task 2: Config module
 
@@ -138,8 +138,8 @@ REQUIRED_COLUMNS: list[str]           # ["village_id","village_name","area_ha"] 
 
 Note in a comment: Rice 0.150 + Cotton 0.225 + Maize 0.125 + Bajra 0.141 + Groundnut 0.359 = 1.000; mix values are Kaggle-column order != CROPS order pitfall — MIX_VECTOR must follow CROPS order.
 
-- [ ] **Step 1: Failing tests** (mix sums to 1; MIX_VECTOR ordering matches REGIONAL_MIX via CROPS; BASELINE_FRAC ≈ 0.2508 < ALPHA_CAP; SUBMISSION_COLUMNS exact; MODEL_FEATURES ⊂ FEATURE_COLUMNS)
-- [ ] **Step 2: Implement, pytest passes, commit** `feat: competition config and priors`
+- [x] **Step 1: Failing tests** (mix sums to 1; MIX_VECTOR ordering matches REGIONAL_MIX via CROPS; BASELINE_FRAC ≈ 0.2508 < ALPHA_CAP; SUBMISSION_COLUMNS exact; MODEL_FEATURES ⊂ FEATURE_COLUMNS)
+- [x] **Step 2: Implement, pytest passes, commit** `feat: competition config and priors`
 
 ### Task 3: Synthetic fixture generator
 
@@ -154,8 +154,8 @@ def make_synthetic_features(seed: int = 0) -> pd.DataFrame
 ```
 Village names include known real ones (Manpura=1, Sankhyad=3, Khanpur=5, Chhani=11, Kotna=12, Pilol=25, Alindra=27, plus Koyali, Angadh, Asoj at other IDs; remaining synthetic names `Village_<id>`).
 
-- [ ] **Step 1: Failing tests** (29 rows; area sum ≈ 21006.71 within 0.01; zero-coverage IDs have coverage 0 and NaN means; `is_synthetic` column all True; deterministic for same seed)
-- [ ] **Step 2: Implement, pytest, commit** `feat: synthetic 29-village fixture generator`
+- [x] **Step 1: Failing tests** (29 rows; area sum ≈ 21006.71 within 0.01; zero-coverage IDs have coverage 0 and NaN means; `is_synthetic` column all True; deterministic for same seed)
+- [x] **Step 2: Implement, pytest, commit** `feat: synthetic 29-village fixture generator`
 
 ### Task 4: Ingestion + validation
 
@@ -173,8 +173,8 @@ def standardize_features(df: pd.DataFrame) -> np.ndarray
 # (29, len(MODEL_FEATURES)) z-scored per column (nan-aware), NaN→0.0 after scaling
 ```
 
-- [ ] **Step 1: Failing tests** (loads synthetic fixture written to tmp_path; drops a column → raises; 28 rows → raises; standardize output shape, ~0 mean, NaN→0 for zero-coverage rows)
-- [ ] **Step 2: Implement, pytest, commit** `feat: feature-table ingestion with strict validation`
+- [x] **Step 1: Failing tests** (loads synthetic fixture written to tmp_path; drops a column → raises; 28 rows → raises; standardize output shape, ~0 mean, NaN→0 for zero-coverage rows)
+- [x] **Step 2: Implement, pytest, commit** `feat: feature-table ingestion with strict validation`
 
 ### Task 5: Coverage confidence
 
@@ -187,8 +187,8 @@ def coverage_confidence(df: pd.DataFrame, saturation: float = 0.5) -> np.ndarray
 ```
 Zero-coverage villages → 0.0 exactly (never zeroed *predictions* — they blend to baseline downstream, encoding the V4 lesson).
 
-- [ ] **Step 1: Failing tests** (IDs 1,12,25,27 → 0.0; full-coverage row → 1.0; monotone in coverage)
-- [ ] **Step 2: Implement, pytest, commit** `feat: coverage confidence`
+- [x] **Step 1: Failing tests** (IDs 1,12,25,27 → 0.0; full-coverage row → 1.0; monotone in coverage)
+- [x] **Step 2: Implement, pytest, commit** `feat: coverage confidence`
 
 ### Task 6: Baseline hedged allocation (safety-net anchor)
 
@@ -201,8 +201,8 @@ def baseline_allocation(area_ha: np.ndarray) -> np.ndarray
 ```
 This reproduces the V5-hedging idea (MSE 1662 anchor): spread proportionally to village area, regional mix everywhere.
 
-- [ ] **Step 1: Failing tests** (grand total == 5269 ± 0.5; per-crop aggregate proportions == REGIONAL_MIX ± 1e-9; no village exceeds ALPHA_CAP·area; non-negative)
-- [ ] **Step 2: Implement, pytest, commit** `feat: hedged regional-mean baseline allocation`
+- [x] **Step 1: Failing tests** (grand total == 5269 ± 0.5; per-crop aggregate proportions == REGIONAL_MIX ± 1e-9; no village exceeds ALPHA_CAP·area; non-negative)
+- [x] **Step 2: Implement, pytest, commit** `feat: hedged regional-mean baseline allocation`
 
 ### Task 7: Aggregate LLP losses
 
@@ -221,8 +221,8 @@ def l2_penalty(theta: np.ndarray, lam: float) -> float
 def cap_violations(pred: np.ndarray, area_ha: np.ndarray, alpha: float) -> np.ndarray  # bool mask, post-hoc audit
 ```
 
-- [ ] **Step 1: Failing tests with hand-computed values** (band inside=0, 100 over hi → known value; loss_mix zero at exact prior mix; loss_shrink zero when conf all 1; anchor arithmetic; cap mask on constructed violation)
-- [ ] **Step 2: Implement, pytest, commit** `feat: aggregate LLP loss components`
+- [x] **Step 1: Failing tests with hand-computed values** (band inside=0, 100 over hi → known value; loss_mix zero at exact prior mix; loss_shrink zero when conf all 1; anchor arithmetic; cap mask on constructed violation)
+- [x] **Step 2: Implement, pytest, commit** `feat: aggregate LLP loss components`
 
 ### Task 8: Route C head
 
@@ -241,8 +241,8 @@ def forward(theta, X, area_ha, conf, alpha: float = ALPHA_CAP) -> dict
 # totals = frac*area_ha ; pred = totals[:,None]*shares  (29,5)
 ```
 
-- [ ] **Step 1: Failing tests** (shapes; for 200 random thetas: pred ≥ 0, totals ≤ alpha·area + 1e-9, shares rows sum to 1; conf=0 rows equal baseline_allocation rows exactly)
-- [ ] **Step 2: Implement, pytest, commit** `feat: cap-safe LLP head with structural shrinkage`
+- [x] **Step 1: Failing tests** (shapes; for 200 random thetas: pred ≥ 0, totals ≤ alpha·area + 1e-9, shares rows sum to 1; conf=0 rows equal baseline_allocation rows exactly)
+- [x] **Step 2: Implement, pytest, commit** `feat: cap-safe LLP head with structural shrinkage`
 
 ### Task 9: Trainer + run logging
 
@@ -263,8 +263,8 @@ def train(X, area_ha, conf, cfg, anchors=None, run_dir="experiments/runs") -> di
 # writes JSON run log: cfg fields, per-component losses, restart losses, aggregate total, per-crop mix, timestamp
 ```
 
-- [ ] **Step 1: Failing tests** (on synthetic fixture: trained aggregate total inside 5200–5500; per-crop mix within MIX_TOL+0.005 of priors; no cap violations; final loss ≤ init loss; run-log JSON exists and round-trips)
-- [ ] **Step 2: Implement, pytest (allow ~1 min runtime), commit** `feat: multi-restart L-BFGS LLP trainer with run logging`
+- [x] **Step 1: Failing tests** (on synthetic fixture: trained aggregate total inside 5200–5500; per-crop mix within MIX_TOL+0.005 of priors; no cap violations; final loss ≤ init loss; run-log JSON exists and round-trips)
+- [x] **Step 2: Implement, pytest (allow ~1 min runtime), commit** `feat: multi-restart L-BFGS LLP trainer with run logging`
 
 ### Task 10: Weak-label ingestion (+ template)
 
@@ -279,8 +279,8 @@ def load_weak_labels(path, features_df) -> pd.DataFrame
 ```
 Template row example: `8,0.05,,0.9,"Google Earth Pro 2025-08 historical","Koyali refinery — near-zero cropland"`
 
-- [ ] **Step 1: Failing tests** (valid file loads and maps village_index; unknown id → raises; fraction 1.2 → raises)
-- [ ] **Step 2: Implement, pytest, commit** `feat: weak-label annotation ingestion`
+- [x] **Step 1: Failing tests** (valid file loads and maps village_index; unknown id → raises; fraction 1.2 → raises)
+- [x] **Step 2: Implement, pytest, commit** `feat: weak-label annotation ingestion`
 
 ### Task 11: Submission writer, validator, comparison report
 
@@ -298,8 +298,8 @@ def comparison_report(preds: dict[str, np.ndarray], features_df, alpha) -> pd.Da
 # one row per village: name, area_ha, per-route totals, cap headroom, flags; plus aggregate footer rows (total, per-crop mix)
 ```
 
-- [ ] **Step 1: Failing tests** (round-trip CSV has exact SUBMISSION_COLUMNS and 29 rows in sample ID order; synthetic without flag → raises; injected cap violation → raises; report contains both routes' totals)
-- [ ] **Step 2: Implement, pytest, commit** `feat: submission writer with hard-constraint validation`
+- [x] **Step 1: Failing tests** (round-trip CSV has exact SUBMISSION_COLUMNS and 29 rows in sample ID order; synthetic without flag → raises; injected cap violation → raises; report contains both routes' totals)
+- [x] **Step 2: Implement, pytest, commit** `feat: submission writer with hard-constraint validation`
 
 ### Task 12: CLI end-to-end + docs
 
@@ -315,8 +315,8 @@ argparse; wires: load → standardize → confidence → (baseline | train) → 
 `docs/compliance/provenance.md`: table of every MODEL_FEATURE → "Capella-only" (all Route C features are Capella-derived); priors → "leaderboard-derived, approximate"; weak labels → "manual visual inspection of free public imagery (validation role)".
 `docs/methodology.md`: architecture, losses, hyperparameters; explicit honesty note: LLP+foundation-model synthesis is novel, not a proven published method; Route C is the maintained fallback.
 
-- [ ] **Step 1: Failing CLI test** (subprocess/monkeypatched run on synthetic fixture with `--allow-synthetic` writes valid CSV; without flag exits nonzero)
-- [ ] **Step 2: Implement, pytest full suite green, commit** `feat: route-c CLI and compliance docs`
+- [x] **Step 1: Failing CLI test** (subprocess/monkeypatched run on synthetic fixture with `--allow-synthetic` writes valid CSV; without flag exits nonzero)
+- [x] **Step 2: Implement, pytest full suite green, commit** `feat: route-c CLI and compliance docs`
 
 ---
 
