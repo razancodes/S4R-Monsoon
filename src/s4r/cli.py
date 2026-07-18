@@ -24,6 +24,11 @@ from s4r.weak_labels.ingest import WeakLabelError, load_weak_labels
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="s4r")
     sub = p.add_subparsers(dest="command", required=True)
+
+    ex = sub.add_parser("extract", help="regenerate village_features.csv from raw Capella data")
+    ex.add_argument("--data-dir", required=True, help="competition data directory")
+    ex.add_argument("--out", required=True, help="output CSV path")
+
     rc = sub.add_parser("route-c", help="classical LLP-constrained fallback pipeline")
     rc.add_argument("--features", required=True)
     rc.add_argument("--sample", required=True)
@@ -74,11 +79,23 @@ def run_route_c(args) -> int:
     return 0
 
 
+def run_extract(args) -> int:
+    from s4r.features.extract import extract_features
+
+    df = extract_features(args.data_dir, out_csv=args.out)
+    n_zero = int((df[[f"coverage_{d}" for d in config.DATES]].sum(axis=1) == 0).sum())
+    print(f"extracted {len(df)} villages -> {args.out}")
+    print(f"area sum: {df['area_ha'].sum():.2f} ha; zero-coverage villages: {n_zero}")
+    return 0
+
+
 def main(argv=None) -> int:
     args = build_parser().parse_args(argv)
     try:
+        if args.command == "extract":
+            return run_extract(args)
         return run_route_c(args)
-    except (DataValidationError, SubmissionError, WeakLabelError) as e:
+    except (DataValidationError, SubmissionError, WeakLabelError, FileNotFoundError, ValueError) as e:
         print(f"error: {e}", file=sys.stderr)
         return 1
 

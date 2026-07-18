@@ -13,3 +13,4 @@ experiments/runs/*
 !experiments/runs/.gitkeep
 outputs/*
 !outputs/.gitkeep
+anrf-aise-hack-2026-round-1-sar-crop-mapping-challenge_copy/

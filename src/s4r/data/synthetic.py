@@ -20,9 +20,9 @@ KNOWN_NAMES = {
     12: "Kotna",
     25: "Pilol",
     27: "Alindra",
-    8: "Koyali",
-    14: "Angadh",
-    16: "Asoj",
+    13: "Koyali",
+    17: "Angadh",
+    24: "Asoj",
 }
 
 # Mean coverage for partially covered villages.
