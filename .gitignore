@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+*.pyc
+*.egg-info/
+data/raw/*
+data/processed/*
+data/weak_labels/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/weak_labels/.gitkeep
+!data/weak_labels/TEMPLATE.csv
+experiments/runs/*
+!experiments/runs/.gitkeep
+outputs/*
+!outputs/.gitkeep
