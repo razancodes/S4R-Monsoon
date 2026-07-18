@@ -1,0 +1,2 @@
+village_id,cultivated_fraction_est,dominant_crop,confidence,source,notes
+8,0.05,,0.9,"Google Earth Pro 2025-08 historical","EXAMPLE ROW - Koyali refinery, near-zero cropland; replace with real annotations"
