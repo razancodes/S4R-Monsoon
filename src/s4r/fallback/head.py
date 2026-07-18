@@ -2,13 +2,17 @@
 
 frac_model  = alpha * sigmoid(X @ w_t + b_t)        -> cultivated fraction, cap-safe
 shares_model = softmax(X @ W_s.T + b_s)             -> simplex, non-negative
-frac  = conf * frac_model  + (1-conf) * BASELINE_FRAC     (structural shrinkage)
+frac  = conf * frac_model  + (1-conf) * base_frac          (structural shrinkage)
 shares = conf * shares_model + (1-conf) * MIX_VECTOR
 pred  = (frac * area_ha)[:, None] * shares
 
-The cap holds by construction: frac_model <= alpha, BASELINE_FRAC < alpha, and
-a convex blend of the two stays <= alpha. Zero-confidence villages reproduce
-baseline_allocation exactly.
+base_frac defaults to BASELINE_FRAC everywhere; weak-label anchors may replace
+it per village (clipped to alpha) so that manual estimates can substitute for
+missing SAR signal on zero-coverage villages (spec section 4.3).
+
+The cap holds by construction: frac_model <= alpha, base_frac <= alpha, and a
+convex blend of the two stays <= alpha. Zero-confidence villages without an
+anchor reproduce baseline_allocation exactly.
 """
 
 import numpy as np
@@ -48,13 +52,18 @@ def forward(
     area_ha: np.ndarray,
     conf: np.ndarray,
     alpha: float = config.ALPHA_CAP,
+    base_frac: np.ndarray | None = None,
 ) -> dict:
     w_t, b_t, W_s, b_s = unflatten(theta)
+
+    if base_frac is None:
+        base_frac = np.full(X.shape[0], config.BASELINE_FRAC)
+    base_frac = np.clip(base_frac, 0.0, alpha)
 
     frac_model = alpha * _sigmoid(X @ w_t + b_t)
     shares_model = _softmax(X @ W_s.T + b_s[None, :])
 
-    frac = conf * frac_model + (1.0 - conf) * config.BASELINE_FRAC
+    frac = conf * frac_model + (1.0 - conf) * base_frac
     shares = conf[:, None] * shares_model + (1.0 - conf)[:, None] * config.MIX_VECTOR[None, :]
 
     totals = frac * area_ha
