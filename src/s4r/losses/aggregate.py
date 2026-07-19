@@ -52,5 +52,21 @@ def l2_penalty(theta: np.ndarray, lam: float) -> float:
     return float(lam * np.sum(theta**2))
 
 
+def l2_penalty_with_prior(theta: np.ndarray, prior_W_s: np.ndarray, lam: float) -> float:
+    # W_s is at offset N_FEATURES + 1 and has size N_CROPS * N_FEATURES
+    off = len(config.MODEL_FEATURES) + 1
+    w_size = len(config.CROPS) * len(config.MODEL_FEATURES)
+    
+    # Non-W_s parameters get standard L2
+    penalty_other = np.sum(theta[:off]**2) + np.sum(theta[off + w_size:]**2)
+    
+    # W_s parameters get squared deviation from prior
+    W_s_flat = theta[off : off + w_size]
+    prior_flat = prior_W_s.flatten()
+    penalty_W_s = np.sum((W_s_flat - prior_flat)**2)
+    
+    return float(lam * (penalty_other + penalty_W_s))
+
+
 def cap_violations(pred: np.ndarray, area_ha: np.ndarray, alpha: float) -> np.ndarray:
     return pred.sum(axis=1) > alpha * area_ha + 1e-9

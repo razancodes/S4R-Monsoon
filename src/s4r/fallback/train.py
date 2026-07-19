@@ -16,7 +16,7 @@ from scipy.optimize import minimize
 
 from s4r import config
 from s4r.fallback.head import forward, n_params
-from s4r.losses.aggregate import l2_penalty, loss_anchor, loss_mix, loss_shrink, loss_total
+from s4r.losses.aggregate import l2_penalty, l2_penalty_with_prior, loss_anchor, loss_mix, loss_shrink, loss_total
 
 
 @dataclass
@@ -30,6 +30,7 @@ class TrainConfig:
     n_restarts: int = 8
     seed: int = 0
     maxiter: int = 300
+    use_physical_prior: bool = True
 
 
 def anchor_base_frac(anchors: pd.DataFrame | None, n: int, alpha: float) -> np.ndarray:
@@ -51,12 +52,17 @@ def anchor_base_frac(anchors: pd.DataFrame | None, n: int, alpha: float) -> np.n
 def _components(theta, X, area_ha, conf, cfg: TrainConfig, anchors: pd.DataFrame | None):
     base_frac = anchor_base_frac(anchors, X.shape[0], cfg.alpha)
     out = forward(theta, X, area_ha, conf, alpha=cfg.alpha, base_frac=base_frac)
+    if cfg.use_physical_prior and hasattr(cfg, "_prior_W_s"):
+        l2 = l2_penalty_with_prior(theta, cfg._prior_W_s, cfg.lam)
+    else:
+        l2 = l2_penalty(theta, cfg.lam)
+
     return {
         "total": loss_total(out["totals"]),
         "mix": loss_mix(out["pred"]),
         "shrink": loss_shrink(out["frac_model"], out["shares_model"], conf),
         "anchor": loss_anchor(out["frac"], anchors),
-        "l2": l2_penalty(theta, cfg.lam),
+        "l2": l2,
     }
 
 
@@ -82,8 +88,30 @@ def train(
     rng = np.random.default_rng(cfg.seed)
     best_theta, best_loss = None, np.inf
     restart_losses = []
+    
+    # Construct physical prior W_s if requested
+    prior_W_s = np.zeros((len(config.CROPS), len(config.MODEL_FEATURES)))
+    if cfg.use_physical_prior:
+        # Rice (0) -> flood_frac_avg (6)
+        prior_W_s[0, 6] = 1.0
+        # Cotton (1) -> mean_oct13 (3), delta_oct13_aug14 (5)
+        prior_W_s[1, 3] = 1.0
+        prior_W_s[1, 5] = 1.0
+        # Maize (2) -> mean_aug14 (2), delta_oct13_aug14 (5)
+        prior_W_s[2, 2] = 1.0
+        prior_W_s[2, 5] = -1.0
+        # Bajra (3) -> mean_aug14 (2), delta_oct13_aug14 (5)
+        prior_W_s[3, 2] = 1.0
+        prior_W_s[3, 5] = -1.0
+        # Groundnut (4) -> No strong single-feature signature identified; left at 0.0 (open gap)
+        
+        cfg._prior_W_s = prior_W_s
+
     for i in range(cfg.n_restarts):
         theta0 = np.zeros(n_params()) if i == 0 else rng.normal(0, 0.5, size=n_params())
+        if cfg.use_physical_prior:
+            off = len(config.MODEL_FEATURES) + 1
+            theta0[off : off + len(config.CROPS) * len(config.MODEL_FEATURES)] += prior_W_s.flatten()
         res = minimize(
             objective,
             theta0,
