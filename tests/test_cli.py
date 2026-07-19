@@ -69,3 +69,25 @@ def test_trained_route_c(data_dir):
     lo, hi = config.TOTAL_AREA_BAND
     assert lo - 1.0 <= total <= hi + 1.0
     assert "grand_total" in res.stdout or "route" in res.stdout
+
+
+def test_route_a_parser_accepts_expected_flags():
+    from s4r.cli import build_parser
+
+    args = build_parser().parse_args(
+        [
+            "route-a",
+            "--features", "f.csv",
+            "--sample", "s.csv",
+            "--data-dir", "raw/",
+            "--out", "o.csv",
+            "--weak-labels", "w.csv",
+            "--epochs", "10",
+            "--seed", "3",
+            "--alpha", "0.36",
+        ]
+    )
+    assert args.command == "route-a"
+    assert args.epochs == 10
+    assert args.alpha == 0.36
+    assert args.weak_labels == "w.csv"

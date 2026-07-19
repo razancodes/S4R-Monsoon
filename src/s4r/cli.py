@@ -40,6 +40,22 @@ def build_parser() -> argparse.ArgumentParser:
     rc.add_argument("--restarts", type=int, default=8)
     rc.add_argument("--allow-synthetic", action="store_true")
     rc.add_argument("--run-dir", default="experiments/runs")
+
+    ra = sub.add_parser(
+        "route-a", help="frozen OlmoEarth backbone + Capella adapter (needs the route-a dep group)"
+    )
+    ra.add_argument("--features", required=True, help="for area/confidence/IDs and the synthetic guard")
+    ra.add_argument("--sample", required=True)
+    ra.add_argument("--data-dir", required=True, help="raw Capella data dir (chip source)")
+    ra.add_argument("--out", required=True)
+    ra.add_argument("--weak-labels", default=None)
+    ra.add_argument("--alpha", type=float, default=config.ALPHA_CAP)
+    ra.add_argument("--seed", type=int, default=0)
+    ra.add_argument("--epochs", type=int, default=300)
+    ra.add_argument("--lr", type=float, default=0.01)
+    ra.add_argument("--chip-px", type=int, default=64)
+    ra.add_argument("--allow-synthetic", action="store_true")
+    ra.add_argument("--run-dir", default="experiments/runs")
     return p
 
 
@@ -79,6 +95,45 @@ def run_route_c(args) -> int:
     return 0
 
 
+def run_route_a(args) -> int:
+    from s4r.route_a.data import village_chips
+    from s4r.route_a.train import TrainAConfig, train_route_a
+
+    features_df = load_features(args.features)
+    sample_df = load_sample_submission(args.sample)
+    area = features_df["area_ha"].to_numpy()
+    conf = coverage_confidence(features_df)
+
+    chips, chip_ids = village_chips(args.data_dir, chip_px=args.chip_px)
+    if chip_ids != [int(v) for v in features_df["village_id"]]:
+        raise ValueError("chip village order does not match the features table")
+
+    anchors = None
+    if args.weak_labels:
+        anchors = load_weak_labels(args.weak_labels, features_df)
+
+    cfg = TrainAConfig(alpha=args.alpha, seed=args.seed, epochs=args.epochs, lr=args.lr)
+    result = train_route_a(chips, area, conf, cfg, anchors=anchors, run_dir=args.run_dir)
+    print(f"training loss: {result['loss']:.6f}")
+    print(f"loss components: {result['loss_components']}")
+    if result["run_log_path"]:
+        print(f"run log: {result['run_log_path']}")
+
+    preds = {"baseline": baseline_allocation(area), "route_a": result["pred"]}
+    print("\n=== aggregate summary (grand_total / per-crop shares vs targets) ===")
+    print(report_summary(preds).to_string(index=False))
+    print("\n=== per-village allocation ===")
+    print(comparison_report(preds, features_df, args.alpha).to_string(index=False))
+
+    out = write_submission(
+        result["pred"], features_df, sample_df, args.out, allow_synthetic=args.allow_synthetic
+    )
+    print(f"\nsubmission written: {out}")
+    if features_df["is_synthetic"].any():
+        print("WARNING: predictions derive from SYNTHETIC data — do NOT submit this file.")
+    return 0
+
+
 def run_extract(args) -> int:
     from s4r.features.extract import extract_features
 
@@ -94,6 +149,8 @@ def main(argv=None) -> int:
     try:
         if args.command == "extract":
             return run_extract(args)
+        if args.command == "route-a":
+            return run_route_a(args)
         return run_route_c(args)
     except (DataValidationError, SubmissionError, WeakLabelError, FileNotFoundError, ValueError) as e:
         print(f"error: {e}", file=sys.stderr)
