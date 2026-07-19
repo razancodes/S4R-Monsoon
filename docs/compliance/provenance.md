@@ -24,13 +24,28 @@ geometry.** Auxiliary sources (weak labels) act only through trained parameters 
 blend targets, consistent with the ruling's "validate rule-based and threshold-based
 approaches" allowance.
 
-## Route A (planned, not yet built)
+## Route B (built 2026-07-18) — Sentinel-1 pseudo-label anchors
 
 | Signal | Provenance | Role |
 |---|---|---|
-| OlmoEarth pretrained weights | Pretrained on Sentinel-1/2, Landsat (public, free) | Frozen backbone; auxiliary-informed by construction |
-| Capella patch embeddings | **Capella-only** input through new trainable adapter | Sole inference-time input |
-| Optional Sentinel-1 distillation teacher | Free public Sentinel-1 GRD | **Training only**, never at inference |
+| Sentinel-1 RTC clips (VV/VH, 10 m, 4 monsoon-2025 dates) | **Microsoft Planetary Computer STAC** (free, public; `sentinel-1-rtc`); cached at `data/raw/s1_stacks.npz` | **Training only** — never an inference input |
+| OlmoEarth-v1-Base embeddings of the S1 clips | `allenai/OlmoEarth-v1-Base` pretrained weights (public, free); inference run locally | **Training only** — source for pseudo-labels |
+| Pseudo-label anchors (`data/weak_labels/annotations.csv`, source `olmoearth_s1_v1`) | Unsupervised: k-means over OlmoEarth token embeddings + seasonal-VH-dynamics cluster labeling (`s4r.route_b.pseudo_labels`) | Training-time anchor loss / blend targets at confidence 0.3; `dominant_crop` deliberately empty |
+
+Only STAC queries over public catalogs leave the machine; **no competition data
+is ever transmitted**. Validation vs Capella features is logged in
+`experiments/runs/route_b_*.json` (moderate correlations, |r| up to ~0.5).
+
+## Route A (built 2026-07-18) — frozen OlmoEarth + Capella adapter
+
+| Signal | Provenance | Role |
+|---|---|---|
+| OlmoEarth pretrained weights | Pretrained on Sentinel-1/2, Landsat (public, free) | **Frozen** backbone (requires_grad=False); auxiliary-informed by construction |
+| Capella chips (`s4r.route_a.data.village_chips`) | **Capella-only** (windowed reads of GEO previews, DN→dB, per-chip z-score) through the trainable adapter | **Sole inference-time input** |
+| Pseudo-label anchors (Route B above) | See Route B | Training-time `L_anchor` + blend targets only |
+
+Route A inference is Capella chips + shapefile geometry only; the backbone
+runs locally, so Capella data never leaves the machine.
 
 All external resources used are freely and publicly accessible (Reasonableness
 Standard). Capella data is processed locally only; it is never transmitted to any

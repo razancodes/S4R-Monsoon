@@ -46,13 +46,29 @@ predictions are constrained only through their aggregate.
   non-negativity, the cap, the total band, or sample-file ID order — and refuses
   synthetic-sourced predictions outright.
 
-## Route A (planned)
+## Route B (implemented) — Sentinel-1 pseudo-label anchors
 
-Frozen OlmoEarth backbone + new trainable Capella patch-embedding layer; pooled
-per-village embeddings replace the engineered features; identical LLP head and
-losses. Capella is the only inference-time input. Known genuine domain gap:
-OlmoEarth never saw X-band SAR (wavelength/resolution/speckle differ from
-Sentinel-1 C-band); budget for it to underperform Route C.
+Sentinel-1 RTC clips (Planetary Computer, monsoon-2025 dates mirroring the
+Capella acquisitions) are embedded by a frozen OlmoEarth-v1-Base encoder;
+k-means over token embeddings plus a seasonal-VH-dynamics rule flags
+agricultural clusters; the per-village fraction of agricultural tokens becomes
+a `cultivated_fraction_est` anchor at confidence 0.3 (`s4r.route_b`).
+Validation against Capella features showed **moderate** correlations
+(|r| up to ~0.5, e.g. Spearman −0.60 vs `delta_aug14_jun19`) — treated as
+weak-but-real signal, hence the low anchor confidence. `dominant_crop` is left
+empty: an unsupervised pipeline cannot credibly name crops. Training-time
+signal only; never an inference input.
+
+## Route A (implemented, under validation)
+
+Frozen OlmoEarth-v1-Base trunk (89M params, requires_grad=False) + trainable
+1-channel Capella patch-embedding adapter and 768→10 projection; the pooled
+features feed a torch mirror of the SAME 66-parameter LLP head (numerical
+equivalence with the numpy head is test-enforced) and the same aggregate
+losses, with `L_anchor` consuming the Route B pseudo-labels. Capella is the
+only inference-time input. Known genuine domain gap: OlmoEarth never saw
+X-band SAR (wavelength/resolution/speckle differ from Sentinel-1 C-band);
+budget for it to underperform Route C.
 
 ## Hyperparameters
 
