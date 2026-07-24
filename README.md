@@ -23,9 +23,9 @@ Because the core dataset can have severe observational gaps or calibration anoma
 * **Phenological Alignment**: It specifically targets four acquisition dates (June 06, June 19, August 14, October 13) that perfectly mirror the critical phenological milestones of the monsoon crop season.
 * **Offline Caching**: The fetched `(H, W, T, 2)` SAR stacks (containing VV and VH polarizations) are heavily cropped using the village shapefiles and cached into an `.npz` file, strictly enforcing the rule that no external network calls are made during inference.
 
-### Phase 3: Foundation Model Anchoring (OlmoEarth-1B)
+### Phase 3: Foundation Model Anchoring (OlmoEarth-V1 Base)
 
-Rather than training a model from scratch on limited data, the pipeline uses the pre-trained weights of the **OlmoEarth-1B Foundation Model** to extract robust physical representations of the land surface.
+Rather than training a model from scratch on limited data, the pipeline uses the pre-trained weights of the **OlmoEarth-V1 Base Foundation Model** to extract robust physical representations of the land surface.
 * **Zero-Shot Encoding**: The Sentinel-1 dB stacks are normalized and passed through the completely frozen OlmoEarth encoder. 
 * **Patch Pooling**: The encoder generates high-dimensional embeddings for 80-meter spatial patches (tokens). These tokens are pooled across time and band-sets to create a highly dense representation of the physical surface for every valid pixel.
 
@@ -39,7 +39,7 @@ To identify which tokens actually represent cropland without using any competiti
 ### Phase 5: Global Bias Correction & Constrained Optimization
 
 The competition enforces strict physical constraints: an alpha cap of 0.38 per village and a grand total area band between 5200 and 5500 hectares. 
-* **Global Bias Correction**: By analyzing the discrepancy between our localized physical prior baseline and the highly accurate OlmoEarth-1B anchors, we identified systematic baseline biases. We apply a targeted global bias correction to all unanchored villages, scaling specific crops to match the true physical distribution.
+* **Global Bias Correction**: By analyzing the discrepancy between our localized physical prior baseline and the highly accurate OlmoEarth-V1 Base anchors, we identified systematic baseline biases. We apply a targeted global bias correction to all unanchored villages, scaling specific crops to match the true physical distribution.
 * **Deficit Absorption**: Our custom rebalancing algorithm calculates the required area deficit or excess needed to satisfy the 5200-5500 ha band. It then sorts the unanchored villages by their `coverage_confidence`. The optimizer iterates through the lowest-confidence villages, safely scaling their predicted areas up to the maximum allowable alpha cap to absorb any deficits. This mathematically guarantees that all constraints are met while perfectly preserving our high-confidence physical priors and our foundation model anchors.
 
 ## Repository Structure
