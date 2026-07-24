@@ -6,6 +6,10 @@ This repository contains the end-to-end pipeline for the S4R Monsoon Crop Yield 
 
 Our solution introduces a novel framework termed **Foundation-Model Anchored Constrained Optimization**. Instead of relying purely on unconstrained black-box machine learning models, our pipeline heavily utilizes domain-specific agronomic physical priors and the zero-shot capabilities of modern earth observation foundation models, completely built across a multi-phase architecture.
 
+## Architechture
+<img width="1691" height="930" alt="938e7ef3-9162-4795-9fc7-f6e458bfb8fa" src="https://github.com/user-attachments/assets/9e4cce41-abd8-4d48-8a7f-c8a8b792098e" />
+
+
 ## Pipeline Architecture & Methodology
 
 Our pipeline is broken down into five deeply integrated phases, ensuring that predictions are physically grounded, robust to missing data, and mathematically bound by competition constraints.
